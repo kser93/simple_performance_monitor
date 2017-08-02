@@ -30,6 +30,8 @@ struct cpu_times_t
 	unsigned long guest_nice; // Time spent running a niced guest (virtual CPU for guest OS under the control of the Linux kernel).
 };
 
+struct cpu_times_t get_cpu_times();
+
 int main()
 {
 	if (is_verbose) printf("hello from simple_performance_monitor!\n");
@@ -57,61 +59,29 @@ double ram_load()
 double cpu_load()
 {
 	int nproc = get_nprocs();
-	struct cpu_times_t cpu_times0, cpu_times1;
-	FILE *stats = fopen("/proc/stat", "r");
-	fscanf(
-		stats, "%s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
-		&(cpu_times0.name),
-		&(cpu_times0.user),
-		&(cpu_times0.nice),
-		&(cpu_times0.system),
-		&(cpu_times0.idle),
-		&(cpu_times0.iowait),
-		&(cpu_times0.irq),
-		&(cpu_times0.softirq),
-		&(cpu_times0.steal),
-		&(cpu_times0.guest),
-		&(cpu_times0.guest_nice)
-	);
-	fclose(stats);
 
+	struct cpu_times_t t0 = get_cpu_times();
 	sleep(1);
-
-	stats = fopen("/proc/stat", "r");
-	fscanf(
-		stats, "%s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
-		&(cpu_times1.name),
-		&(cpu_times1.user),
-		&(cpu_times1.nice),
-		&(cpu_times1.system),
-		&(cpu_times1.idle),
-		&(cpu_times1.iowait),
-		&(cpu_times1.irq),
-		&(cpu_times1.softirq),
-		&(cpu_times1.steal),
-		&(cpu_times1.guest),
-		&(cpu_times1.guest_nice)
-	);
-	fclose(stats);
+	struct cpu_times_t t1 = get_cpu_times();
 	
-	struct cpu_times_t cpu_times_diff = 
+	struct cpu_times_t diff = 
 	{
 		"diff",
-		cpu_times1.user - cpu_times0.user,
-		cpu_times1.nice - cpu_times0.nice,
-		cpu_times1.system - cpu_times0.system,
-		cpu_times1.idle - cpu_times0.idle,
-		cpu_times1.iowait - cpu_times0.iowait,
-		cpu_times1.irq - cpu_times0.irq,
-		cpu_times1.softirq - cpu_times0.softirq,
-		cpu_times1.steal - cpu_times0.steal,
-		cpu_times1.guest - cpu_times0.guest,
-		cpu_times1.guest_nice - cpu_times0.guest_nice
+		t1.user - t0.user,
+		t1.nice - t0.nice,
+		t1.system - t0.system,
+		t1.idle - t0.idle,
+		t1.iowait - t0.iowait,
+		t1.irq - t0.irq,
+		t1.softirq - t0.softirq,
+		t1.steal - t0.steal,
+		t1.guest - t0.guest,
+		t1.guest_nice - t0.guest_nice
 	};
 
-	unsigned long effective_load = cpu_times_diff.user + cpu_times_diff.nice + cpu_times_diff.system + cpu_times_diff.irq +
-		cpu_times_diff.softirq + cpu_times_diff.steal + cpu_times_diff.guest + cpu_times_diff.guest_nice;
-	unsigned long idle_load = cpu_times_diff.idle; // cpu_times_diff.iowait is not using
+	unsigned long effective_load = diff.user + diff.nice + diff.system + diff.irq +
+		diff.softirq + diff.steal + diff.guest + diff.guest_nice;
+	unsigned long idle_load = diff.idle; // diff.iowait is not using
 	double load = (double)(effective_load) / (effective_load + idle_load);
 
 	if (is_verbose)
@@ -121,4 +91,26 @@ double cpu_load()
 	}
 
 	return load;
+}
+
+struct cpu_times_t get_cpu_times()
+{
+	struct cpu_times_t cpu_times;
+	FILE *stats = fopen("/proc/stat", "r");
+	fscanf(
+		stats, "%s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+		&(cpu_times.name),
+		&(cpu_times.user),
+		&(cpu_times.nice),
+		&(cpu_times.system),
+		&(cpu_times.idle),
+		&(cpu_times.iowait),
+		&(cpu_times.irq),
+		&(cpu_times.softirq),
+		&(cpu_times.steal),
+		&(cpu_times.guest),
+		&(cpu_times.guest_nice)
+	);
+	fclose(stats);
+	return cpu_times;
 }
