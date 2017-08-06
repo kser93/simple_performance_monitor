@@ -16,12 +16,10 @@ int main()
 	double ram_ld = 0.0;
 	double cpu_ld = 0.0;
 
-	struct cpu_times_list_t cpu_times_list = { NULL, NULL, 0 };
-
 	while (true)
 	{
 		ram_ld = ram_load();
-		cpu_ld = cpu_load(&cpu_times_list);
+		cpu_ld = cpu_load();
 		
 		usleep(USEC_PER_SEC / 10);
 	}

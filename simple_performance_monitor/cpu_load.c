@@ -6,24 +6,53 @@
 #include <time.h>
 #include <sys/time.h>
 
+#define CPU_CORE_NAME_LEN 13 // longest name of /proc/stat name field
+/* (cat /proc/stat | cut -d " " -f1 | wc -L) => 13 (len("procs_running")) */
+
+struct cpu_times_t
+{
+	char name[CPU_CORE_NAME_LEN]; // Name of current cpu core.
+	unsigned long user; // Time spent in user mode.
+	unsigned long nice; // Time spent in user mode with low priority (nice).
+	unsigned long system; // Time spent in system mode.
+	unsigned long idle; // Time spent in the idle task.
+	unsigned long iowait; // Time waiting for I/O to complete.
+	unsigned long irq; // Time servicing interrupts.
+	unsigned long softirq; // Time servicing softirqs.
+	unsigned long steal; // Stolen time (spent in other OS when running in a virtualized environment).
+	unsigned long guest; // Time spent running a virtual CPU for guest OS under the control of the Linux kernel.
+	unsigned long guest_nice; // Time spent running a niced guest (virtual CPU for guest OS under the control of the Linux kernel).
+};
+
+struct cpu_times_node_t
+{
+	struct cpu_times_t cpu_times;
+	struct cpu_times_node_t *next;
+	struct timeval tv;
+};
+
+struct cpu_times_list_t
+{
+	struct cpu_times_node_t *root;
+	struct cpu_times_node_t *last;
+	size_t size;
+};
+
+static struct cpu_times_list_t cpu_times_list = { NULL, NULL, 0 };
+
 struct cpu_times_t get_cpu_times();
 struct cpu_times_t cpu_times_diff(struct cpu_times_t t0, struct cpu_times_t t1);
-
 struct cpu_times_node_t *push_back_cpu_times_list(struct cpu_times_list_t *cpu_times_list, struct cpu_times_t new_cpu_times);
 struct cpu_times_node_t *append_cpu_times(struct cpu_times_list_t *cpu_times_list);
-
 struct cpu_times_t pop_front_cpu_times_list(struct cpu_times_list_t *cpu_times_list);
-
-double cpu_load(struct cpu_times_list_t *cpu_times_list);
-
+double cpu_load();
 struct timeval timeval_sub(struct timeval a, struct timeval b);
 
 
-
-double cpu_load(struct cpu_times_list_t *cpu_times_list)
+double cpu_load()
 {
-	struct cpu_times_node_t *node1 = append_cpu_times(cpu_times_list);
-	struct cpu_times_node_t *node0 = cpu_times_list->root;
+	struct cpu_times_node_t *node1 = append_cpu_times(&cpu_times_list);
+	struct cpu_times_node_t *node0 = cpu_times_list.root;
 
 	struct cpu_times_t diff = cpu_times_diff(node0->cpu_times, node1->cpu_times);
 
@@ -39,7 +68,7 @@ double cpu_load(struct cpu_times_list_t *cpu_times_list)
 	struct timeval tv_diff = timeval_sub(node1->tv, node0->tv);
 	if (tv_diff.tv_sec > MOVING_WINDOW_LEN_SEC)
 	{
-		pop_front_cpu_times_list(cpu_times_list);
+		pop_front_cpu_times_list(&cpu_times_list);
 	}
 
 	if (is_verbose)
