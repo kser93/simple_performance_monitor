@@ -64,7 +64,13 @@
     <IncludePath>C:\Users\kserx\Documents\Visual Studio 2017\include_linux;C:\Users\kserx\Documents\Visual Studio 2017\include_linux\x86_64-linux-gnu;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="cpu_load.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="ram_load.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cpu_load.h" />
+    <ClInclude Include="ram_load.h" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
